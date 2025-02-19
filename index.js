@@ -1,25 +1,27 @@
-// Importing database functions. DO NOT MODIFY THIS LINE.
 import { central, db1, db2, db3, vault } from "./databases.js";
 
-// central: database identifies which database the users are stored within
-const val = await central(1);
-console.log(val); // returns-> db1
+const dbs = { db1, db2, db3 };
 
-// db1, db2. db3: databases contain the user's basic information, including username, website, and company.
-const val2 = await db1(1)
-console.log(val2);
+async function getUserData(id) {
+    try {
+        if (typeof id !== "number" || id < 1 || id > 10) {
+            throw new Error("Invalid ID! Please enter a number between 1 and 10.");
+        }
 
-// val: The personal data for each user is contained within the vault database since its access and usage is restricted by law.
-const val3 = await vault(1);
-console.log(val3);
+        const dbName = await central(id);
+        const [basicInfo, personalInfo] = await Promise.all([
+            dbs[dbName](id),
+            vault(id)
+        ]);
 
-
-
-
-function getUserData(id) {
-  const dbs = {
-    db1: db1,
-    db2: db2,
-    db3: db3,
-  };
+        return { id, ...basicInfo, ...personalInfo };
+    } catch (error) {
+        return { error: error.message };
+    }
 }
+
+document.getElementById("fetchData").addEventListener("click", async () => {
+    const userId = Number(document.getElementById("userId").value);
+    const result = await getUserData(userId);
+    document.getElementById("output").textContent = JSON.stringify(result, null, 2);
+});
